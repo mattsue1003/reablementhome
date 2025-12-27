@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>愛迪樂復能影音處方籤</title>
+    
+    <!-- 引入 React 和 ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- 引入 Babel 用於解析 JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+            background-color: #f3f4f6;
+        }
+        /* 自定義捲軸隱藏但保留功能 */
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        /* 動畫效果 */
+        @keyframes slideInRight {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+        .animate-slide-in-right {
+            animation: slideInRight 0.3s ease-out forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.2s ease-out forwards;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        // --- 內建圖示庫 (SVG Components) ---
+        // 修復說明：將原本依賴外部 lucide CDN 的方式，改為直接定義 SVG 元件，避免 React 渲染錯誤 #130
+        const ICONS = {
+            Search: ({size, className}) => (
+                <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            ),
+            ShoppingBag: ({size, className}) => (
+                <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path><path d="M3 6h18"></path><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+            ),
+            X: ({size, className}) => (
+                <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            ),
+            Check: ({size, className}) => (
+                <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="20 6 9 17 4 12"></polyline></svg>
+            ),
+            Copy: ({size, className}) => (
+                <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            ),
+            PlayCircle: ({size, className}) => (
+                <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>
+            ),
+            Trash2: ({size, className}) => (
+                <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+            ),
+            Video: ({size, className}) => (
+                <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
+            ),
+            Info: ({size, className}) => (
+                <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+            ),
+            Menu: ({size, className}) => (
+                <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            )
+        };
+
+        const Icon = ({ icon, size = 20, className = "" }) => {
+            const IconComponent = ICONS[icon];
+            if (!IconComponent) return null;
+            return <IconComponent size={size} className={className} />;
+        };
+
+        // --- 模擬資料庫 (您可以替換成真實的 YouTube ID) ---
+        // 更新：新增輔具與無障礙影片資料
+        const VIDEO_DATABASE = [
+            { id: 'v1', ytid: 'inpok4MKVLM', title: '坐姿抬腿運動', category: '下肢肌力', description: '適合長輩的坐姿大腿肌力訓練，增強起立行走能力。', duration: '5:00' },
+            { id: 'v2', ytid: '3_oSS7Fj8_c', title: '居家平衡訓練', category: '平衡協調', description: '簡單的居家平衡運動，預防跌倒風險。', duration: '8:30' },
+            { id: 'v3', ytid: 'rX7flQ1X_ms', title: '上肢關節活動', category: '上肢訓練', description: '肩膀與手肘的關節活動度練習，預防五十肩。', duration: '4:15' },
+            { id: 'v4', ytid: 'vecL_M7OQ3E', title: '手指精細動作', category: '手部功能', description: '利用生活小物進行手指靈活度訓練。', duration: '6:20' },
+            { id: 'v5', ytid: '02K1jR-hXN8', title: '從椅子站起練習', category: '日常生活', description: '正確的坐站轉移技巧與肌力訓練。', duration: '3:45' },
+            { id: 'v6', ytid: 'Q1inpok4MKV', title: '中風後手部伸展', category: '中風復健', description: '針對張力過高的手部進行舒緩伸展。', duration: '7:10' },
+            { id: 'v7', ytid: '7_oSS7Fj8_d', title: '毛巾操伸展', category: '上肢訓練', description: '使用毛巾輔助進行上半身與背部伸展。', duration: '5:50' },
+            { id: 'v8', ytid: '9X7flQ1X_mt', title: '核心肌群強化', category: '核心訓練', description: '躺姿核心運動，保護脊椎與改善腰痠。', duration: '9:00' },
+            { id: 'v9', ytid: 'mecL_M7OQ3F', title: '認知雙重任務', category: '認知訓練', description: '一邊踏步一邊進行算數或文字接龍。', duration: '4:30' },
+            { id: 'v10', ytid: '12K1jR-hXN9', title: '穿脫衣物技巧', category: '日常生活', description: '單手穿脫衣物的復能技巧教學。', duration: '6:00' },
+            // 新增：輔具介紹影片
+            { id: 'v11', ytid: 'wheelchair_1', title: '輪椅正確操作教學', category: '輔具介紹', description: '如何正確展開、收合輪椅，以及安全上下坡技巧。', duration: '6:45' },
+            { id: 'v12', ytid: 'walker_use_2', title: '助行器高度調整與使用', category: '輔具介紹', description: '針對不同身高的長輩，教導如何調整助行器高度與行走步態。', duration: '5:20' },
+            { id: 'v13', ytid: 'cane_tech_3', title: '單手拐杖使用技巧', category: '輔具介紹', description: '教導中風或單側無力者如何正確使用單手拐杖行走。', duration: '4:10' },
+            // 新增：無障礙環境影片
+            { id: 'v14', ytid: 'home_mod_1', title: '浴室防滑與扶手規劃', category: '無障礙環境', description: '浴室是最容易跌倒的地方，教您如何安裝扶手與防滑設施。', duration: '7:30' },
+            { id: 'v15', ytid: 'home_safe_2', title: '居家動線無障礙改造', category: '無障礙環境', description: '移除家中地毯、門檻等障礙物，打造安全的行走動線。', duration: '5:50' },
+             { id: 'v16', ytid: 'stair_lift_3', title: '認識樓梯升降椅', category: '無障礙環境', description: '解決長輩上下樓梯困難的輔具方案介紹。', duration: '4:45' },
+        ];
+
+        // 更新：新增分類標籤
+        const CATEGORIES = ['全部', '輔具介紹', '無障礙環境', '上肢訓練', '下肢肌力', '平衡協調', '手部功能', '日常生活', '認知訓練', '中風復健', '核心訓練'];
+
+        // --- 主應用程式 ---
+        const App = () => {
+            // 狀態管理
+            const [searchTerm, setSearchTerm] = useState('');
+            const [activeCategory, setActiveCategory] = useState('全部');
+            const [selectedVideos, setSelectedVideos] = useState([]); // 購物車
+            const [isCartOpen, setIsCartOpen] = useState(false);
+            const [previewVideo, setPreviewVideo] = useState(null); // 當前預覽的影片
+            const [copyStatus, setCopyStatus] = useState(false); // 複製成功提示
+
+            // 篩選邏輯
+            const filteredVideos = useMemo(() => {
+                return VIDEO_DATABASE.filter(video => {
+                    const matchesSearch = video.title.includes(searchTerm) || video.description.includes(searchTerm);
+                    const matchesCategory = activeCategory === '全部' || video.category === activeCategory;
+                    return matchesSearch && matchesCategory;
+                });
+            }, [searchTerm, activeCategory]);
+
+            // 加入/移除清單
+            const toggleSelection = (video) => {
+                if (selectedVideos.find(v => v.id === video.id)) {
+                    setSelectedVideos(prev => prev.filter(v => v.id !== video.id));
+                } else {
+                    setSelectedVideos(prev => [...prev, video]);
+                }
+            };
+
+            // 檢查是否已選擇
+            const isSelected = (id) => !!selectedVideos.find(v => v.id === id);
+
+            // 複製分享文字
+            const copyToClipboard = () => {
+                if (selectedVideos.length === 0) return;
+
+                const dateStr = new Date().toLocaleDateString('zh-TW');
+                let text = `【愛迪樂復能處方籤】\n日期：${dateStr}\n\n您好，這是為您挑選的復能運動影片，請依照影片指示進行練習，若有不適請暫停並諮詢治療師。\n\n`;
+                
+                selectedVideos.forEach((v, index) => {
+                    text += `${index + 1}. ${v.title} (${v.duration})\n`;
+                    text += `https://www.youtube.com/watch?v=${v.ytid}\n\n`;
+                });
+
+                text += `加油！持之以恆就能看見進步。`;
+
+                // 執行複製
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    setCopyStatus(true);
+                    setTimeout(() => setCopyStatus(false), 2000);
+                } catch (err) {
+                    console.error('複製失敗', err);
+                    alert('複製失敗，請手動複製。');
+                }
+                document.body.removeChild(textArea);
+            };
+
+            return (
+                <div className="min-h-screen pb-24 md:pb-0">
+                    {/* --- 頁首 --- */}
+                    <header className="bg-teal-600 text-white shadow-lg sticky top-0 z-40">
+                        <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+                            <div className="flex items-center gap-2">
+                                <Icon icon="Video" className="text-teal-100" />
+                                <h1 className="text-xl font-bold tracking-wide">愛迪樂復能影音庫</h1>
+                            </div>
+                            
+                            {/* 購物車按鈕 (Mobile/Desktop) */}
+                            <button 
+                                onClick={() => setIsCartOpen(true)}
+                                className="relative p-2 rounded-full hover:bg-teal-700 transition-colors"
+                            >
+                                <Icon icon="ShoppingBag" />
+                                {selectedVideos.length > 0 && (
+                                    <span className="absolute top-0 right-0 bg-red-500 text-white text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full animate-pulse border-2 border-teal-600">
+                                        {selectedVideos.length}
+                                    </span>
+                                )}
+                            </button>
+                        </div>
+
+                        {/* 搜尋與分類列 */}
+                        <div className="bg-teal-700 px-4 py-3 shadow-inner">
+                            <div className="max-w-6xl mx-auto space-y-3">
+                                {/* 搜尋框 */}
+                                <div className="relative">
+                                    <Icon icon="Search" className="absolute left-3 top-1/2 -translate-y-1/2 text-teal-200" size={18} />
+                                    <input 
+                                        type="text" 
+                                        placeholder="搜尋影片 (例如: 抬腿, 平衡, 輪椅...)" 
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        className="w-full bg-teal-800/50 text-white placeholder-teal-300 rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-400 border border-teal-600"
+                                    />
+                                </div>
+                                
+                                {/* 分類標籤 (可橫向捲動) */}
+                                <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
+                                    {CATEGORIES.map(cat => (
+                                        <button
+                                            key={cat}
+                                            onClick={() => setActiveCategory(cat)}
+                                            className={`whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+                                                activeCategory === cat 
+                                                ? 'bg-white text-teal-700 shadow-md scale-105' 
+                                                : 'bg-teal-800 text-teal-100 hover:bg-teal-600'
+                                            }`}
+                                        >
+                                            {cat}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </header>
+
+                    {/* --- 主要內容區 --- */}
+                    <main className="max-w-6xl mx-auto px-4 py-6">
+                        
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-gray-700 font-bold flex items-center gap-2">
+                                <span className="bg-teal-100 text-teal-800 px-2 py-1 rounded text-sm">{activeCategory}</span>
+                                <span className="text-sm text-gray-500 font-normal">共 {filteredVideos.length} 部影片</span>
+                            </h2>
+                        </div>
+
+                        {filteredVideos.length === 0 ? (
+                            <div className="text-center py-20 text-gray-400">
+                                <Icon icon="Info" size={48} className="mx-auto mb-4 opacity-50" />
+                                <p>找不到相關影片，請嘗試其他關鍵字。</p>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                {filteredVideos.map(video => (
+                                    <div key={video.id} className={`bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden border ${isSelected(video.id) ? 'border-teal-500 ring-1 ring-teal-500' : 'border-gray-100'}`}>
+                                        {/* 影片縮圖區域 */}
+                                        <div className="relative group cursor-pointer aspect-video bg-gray-200" onClick={() => setPreviewVideo(video)}>
+                                            <img 
+                                                src={`https://img.youtube.com/vi/${video.ytid}/mqdefault.jpg`} 
+                                                alt={video.title}
+                                                className="w-full h-full object-cover"
+                                                onError={(e) => {
+                                                    e.target.onerror = null; 
+                                                    e.target.src = 'https://via.placeholder.com/320x180?text=No+Thumbnail';
+                                                }}
+                                            />
+                                            <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors flex items-center justify-center">
+                                                <Icon icon="PlayCircle" size={48} className="text-white opacity-80 group-hover:opacity-100 scale-90 group-hover:scale-110 transition-transform" />
+                                            </div>
+                                            <span className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded">
+                                                {video.duration}
+                                            </span>
+                                        </div>
+
+                                        {/* 內容區域 */}
+                                        <div className="p-4">
+                                            <div className="flex justify-between items-start mb-2">
+                                                <span className="text-xs font-semibold text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full">
+                                                    {video.category}
+                                                </span>
+                                            </div>
+                                            <h3 className="font-bold text-gray-800 mb-1 line-clamp-1" title={video.title}>{video.title}</h3>
+                                            <p className="text-sm text-gray-500 line-clamp-2 mb-4 h-10">{video.description}</p>
+                                            
+                                            {/* 按鈕 */}
+                                            <button 
+                                                onClick={() => toggleSelection(video)}
+                                                className={`w-full py-2 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors ${
+                                                    isSelected(video.id)
+                                                    ? 'bg-teal-100 text-teal-700 hover:bg-teal-200'
+                                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                                }`}
+                                            >
+                                                {isSelected(video.id) ? (
+                                                    <><Icon icon="Check" size={18} /> 已加入清單</>
+                                                ) : (
+                                                    <><Icon icon="ShoppingBag" size={18} /> 加入處方籤</>
+                                                )}
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </main>
+
+                    {/* --- 處方籤側邊欄 (Modal) --- */}
+                    {isCartOpen && (
+                        <div className="fixed inset-0 z-50 flex justify-end">
+                            {/* 背景遮罩 */}
+                            <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setIsCartOpen(false)}></div>
+                            
+                            {/* 側邊欄本體 */}
+                            <div className="relative w-full max-w-md bg-white h-full shadow-2xl flex flex-col animate-slide-in-right">
+                                <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-teal-50">
+                                    <h2 className="text-lg font-bold text-teal-800 flex items-center gap-2">
+                                        <Icon icon="ShoppingBag" />
+                                        已選影片清單 ({selectedVideos.length})
+                                    </h2>
+                                    <button onClick={() => setIsCartOpen(false)} className="text-gray-400 hover:text-gray-600">
+                                        <Icon icon="X" />
+                                    </button>
+                                </div>
+
+                                <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                                    {selectedVideos.length === 0 ? (
+                                        <div className="flex flex-col items-center justify-center h-64 text-gray-400">
+                                            <Icon icon="Video" size={48} className="mb-4 text-gray-300" />
+                                            <p>清單是空的</p>
+                                            <p className="text-sm">快去挑選適合的復能影片吧！</p>
+                                        </div>
+                                    ) : (
+                                        selectedVideos.map((video, idx) => (
+                                            <div key={video.id} className="flex gap-3 bg-white border border-gray-100 p-2 rounded-lg shadow-sm">
+                                                <div className="w-20 aspect-video bg-gray-200 rounded overflow-hidden flex-shrink-0 relative">
+                                                    <img 
+                                                        src={`https://img.youtube.com/vi/${video.ytid}/mqdefault.jpg`} 
+                                                        className="w-full h-full object-cover"
+                                                        onError={(e) => {
+                                                            e.target.onerror = null; 
+                                                            e.target.src = 'https://via.placeholder.com/320x180?text=No+Thumbnail';
+                                                        }}
+                                                    />
+                                                    <div className="absolute top-0 left-0 bg-teal-600 text-white text-xs px-1.5 rounded-br font-bold">
+                                                        {idx + 1}
+                                                    </div>
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <h4 className="font-bold text-gray-800 text-sm truncate">{video.title}</h4>
+                                                    <p className="text-xs text-gray-500 mb-2">{video.category} • {video.duration}</p>
+                                                </div>
+                                                <button 
+                                                    onClick={() => toggleSelection(video)}
+                                                    className="text-red-400 hover:text-red-600 p-1 self-center"
+                                                >
+                                                    <Icon icon="Trash2" size={18} />
+                                                </button>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+
+                                {/* 底部操作區 */}
+                                <div className="p-4 border-t border-gray-100 bg-gray-50 space-y-3">
+                                    <div className="bg-yellow-50 text-yellow-800 text-xs p-3 rounded border border-yellow-200">
+                                        💡 提示：點擊「複製分享內容」後，可直接貼到 LINE 傳送給家屬。
+                                    </div>
+                                    <div className="flex gap-3">
+                                        <button 
+                                            onClick={() => setSelectedVideos([])}
+                                            disabled={selectedVideos.length === 0}
+                                            className="px-4 py-3 rounded-lg border border-gray-300 text-gray-600 font-medium hover:bg-gray-100 disabled:opacity-50"
+                                        >
+                                            清空
+                                        </button>
+                                        <button 
+                                            onClick={copyToClipboard}
+                                            disabled={selectedVideos.length === 0}
+                                            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-bold text-white shadow-md transition-all ${
+                                                copyStatus 
+                                                ? 'bg-green-600 scale-95' 
+                                                : 'bg-teal-600 hover:bg-teal-700 hover:shadow-lg'
+                                            } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                        >
+                                            {copyStatus ? (
+                                                <><Icon icon="Check" /> 複製成功！</>
+                                            ) : (
+                                                <><Icon icon="Copy" /> 複製分享內容</>
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* --- 影片預覽 Modal --- */}
+                    {previewVideo && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+                            <div className="bg-white w-full max-w-3xl rounded-xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+                                <div className="p-4 flex justify-between items-center bg-gray-900 text-white">
+                                    <h3 className="font-bold text-lg truncate pr-4">{previewVideo.title}</h3>
+                                    <button onClick={() => setPreviewVideo(null)} className="hover:text-gray-300">
+                                        <Icon icon="X" />
+                                    </button>
+                                </div>
+                                <div className="aspect-video bg-black w-full">
+                                    <iframe 
+                                        width="100%" 
+                                        height="100%" 
+                                        src={`https://www.youtube.com/embed/${previewVideo.ytid}?autoplay=1`} 
+                                        title="YouTube video player" 
+                                        frameBorder="0" 
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                        allowFullScreen
+                                    ></iframe>
+                                </div>
+                                <div className="p-6 overflow-y-auto">
+                                    <div className="flex gap-2 mb-3">
+                                        <span className="bg-teal-100 text-teal-800 text-xs font-bold px-2 py-1 rounded">
+                                            {previewVideo.category}
+                                        </span>
+                                        <span className="bg-gray-100 text-gray-600 text-xs font-bold px-2 py-1 rounded flex items-center gap-1">
+                                            <Icon icon="Video" size={12} /> {previewVideo.duration}
+                                        </span>
+                                    </div>
+                                    <p className="text-gray-700 leading-relaxed mb-6">
+                                        {previewVideo.description}
+                                    </p>
+                                    
+                                    <div className="flex justify-end">
+                                         <button 
+                                            onClick={() => {
+                                                toggleSelection(previewVideo);
+                                                // 選擇後不關閉視窗，讓使用者可以繼續看，或者你可以選擇 setPreviewVideo(null) 關閉
+                                            }}
+                                            className={`px-6 py-2.5 rounded-lg font-bold flex items-center gap-2 transition-colors ${
+                                                isSelected(previewVideo.id)
+                                                ? 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                                                : 'bg-teal-600 text-white hover:bg-teal-700 shadow-md'
+                                            }`}
+                                        >
+                                            {isSelected(previewVideo.id) ? (
+                                                <><Icon icon="Check" /> 已在清單中</>
+                                            ) : (
+                                                <><Icon icon="ShoppingBag" /> 加入處方籤</>
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
