@@ -59,7 +59,6 @@
         const { useState, useEffect, useMemo } = React;
 
         // --- 內建圖示庫 (SVG Components) ---
-        // 修復說明：將原本依賴外部 lucide CDN 的方式，改為直接定義 SVG 元件，避免 React 渲染錯誤 #130
         const ICONS = {
             Search: ({size, className}) => (
                 <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
@@ -99,27 +98,27 @@
             return <IconComponent size={size} className={className} />;
         };
 
-        // --- 模擬資料庫 (您可以替換成真實的 YouTube ID) ---
-        // 更新：新增輔具與無障礙影片資料
+        // --- 資料庫 (已更新為真實 YouTube 影片 ID) ---
+        // 注意：這些影片來自網路公開資源，若連結失效可能需要重新替換
         const VIDEO_DATABASE = [
-            { id: 'v1', ytid: 'inpok4MKVLM', title: '坐姿抬腿運動', category: '下肢肌力', description: '適合長輩的坐姿大腿肌力訓練，增強起立行走能力。', duration: '5:00' },
-            { id: 'v2', ytid: '3_oSS7Fj8_c', title: '居家平衡訓練', category: '平衡協調', description: '簡單的居家平衡運動，預防跌倒風險。', duration: '8:30' },
-            { id: 'v3', ytid: 'rX7flQ1X_ms', title: '上肢關節活動', category: '上肢訓練', description: '肩膀與手肘的關節活動度練習，預防五十肩。', duration: '4:15' },
-            { id: 'v4', ytid: 'vecL_M7OQ3E', title: '手指精細動作', category: '手部功能', description: '利用生活小物進行手指靈活度訓練。', duration: '6:20' },
-            { id: 'v5', ytid: '02K1jR-hXN8', title: '從椅子站起練習', category: '日常生活', description: '正確的坐站轉移技巧與肌力訓練。', duration: '3:45' },
-            { id: 'v6', ytid: 'Q1inpok4MKV', title: '中風後手部伸展', category: '中風復健', description: '針對張力過高的手部進行舒緩伸展。', duration: '7:10' },
-            { id: 'v7', ytid: '7_oSS7Fj8_d', title: '毛巾操伸展', category: '上肢訓練', description: '使用毛巾輔助進行上半身與背部伸展。', duration: '5:50' },
-            { id: 'v8', ytid: '9X7flQ1X_mt', title: '核心肌群強化', category: '核心訓練', description: '躺姿核心運動，保護脊椎與改善腰痠。', duration: '9:00' },
-            { id: 'v9', ytid: 'mecL_M7OQ3F', title: '認知雙重任務', category: '認知訓練', description: '一邊踏步一邊進行算數或文字接龍。', duration: '4:30' },
-            { id: 'v10', ytid: '12K1jR-hXN9', title: '穿脫衣物技巧', category: '日常生活', description: '單手穿脫衣物的復能技巧教學。', duration: '6:00' },
-            // 新增：輔具介紹影片
-            { id: 'v11', ytid: 'wheelchair_1', title: '輪椅正確操作教學', category: '輔具介紹', description: '如何正確展開、收合輪椅，以及安全上下坡技巧。', duration: '6:45' },
-            { id: 'v12', ytid: 'walker_use_2', title: '助行器高度調整與使用', category: '輔具介紹', description: '針對不同身高的長輩，教導如何調整助行器高度與行走步態。', duration: '5:20' },
-            { id: 'v13', ytid: 'cane_tech_3', title: '單手拐杖使用技巧', category: '輔具介紹', description: '教導中風或單側無力者如何正確使用單手拐杖行走。', duration: '4:10' },
-            // 新增：無障礙環境影片
-            { id: 'v14', ytid: 'home_mod_1', title: '浴室防滑與扶手規劃', category: '無障礙環境', description: '浴室是最容易跌倒的地方，教您如何安裝扶手與防滑設施。', duration: '7:30' },
-            { id: 'v15', ytid: 'home_safe_2', title: '居家動線無障礙改造', category: '無障礙環境', description: '移除家中地毯、門檻等障礙物，打造安全的行走動線。', duration: '5:50' },
-             { id: 'v16', ytid: 'stair_lift_3', title: '認識樓梯升降椅', category: '無障礙環境', description: '解決長輩上下樓梯困難的輔具方案介紹。', duration: '4:45' },
+            { id: 'v1', ytid: 'YcpXUYyquLY', title: '坐姿抬腿運動', category: '下肢肌力', description: '【大愛真健康】適合長輩的坐姿大腿肌力訓練，增強起立行走能力。', duration: '3:00' },
+            { id: 'v2', ytid: 'K84qprMH1Og', title: '居家平衡訓練', category: '平衡協調', description: '【北木健身】三個簡單的運動，增進你的平衡感，預防跌倒。', duration: '8:30' },
+            { id: 'v3', ytid: '5xAu3_kbKE8', title: '上肢關節活動', category: '上肢訓練', description: '【Stone P.T.】十動操，活動肩、肘、手部關節的各個角度。', duration: '4:15' },
+            { id: 'v4', ytid: 'LrSbivzisW0', title: '手指張開訓練', category: '手部功能', description: '【多C多健康】針對手指打不開、精細動作困難的訓練。', duration: '6:20' },
+            { id: 'v5', ytid: 'JjJKrcFxMxg', title: '從椅子站起技巧', category: '日常生活', description: '正確的坐站轉移技巧，省力又安全。', duration: '3:45' },
+            { id: 'v6', ytid: 'UYY2FNAbGLc', title: '中風後手指誘發', category: '中風復健', description: '【多C多健康】一招誘發手指動作，改善手部功能。', duration: '7:10' },
+            { id: 'v7', ytid: '_PBRUHH3hlM', title: '毛巾操伸展', category: '上肢訓練', description: '【i醫健康網】使用毛巾輔助進行30分鐘上肢運動。', duration: '5:50' },
+            { id: 'v8', ytid: 'PKe622ObCuQ', title: '核心肌群強化', category: '核心訓練', description: '【徐棟英教官】躺姿轉體，訓練臀部和腹外斜肌。', duration: '9:00' },
+            { id: 'v9', ytid: 'kj6fhy5SMBM', title: '認知雙重任務', category: '認知訓練', description: '【練健康】一邊踏步一邊進行認知任務，降低跌倒風險。', duration: '4:30' },
+            { id: 'v10', ytid: 'VrCRmq9F2Mc', title: '單手穿脫衣物', category: '日常生活', description: '【多C多健康】教導中風患者如何單手穿脫前開式上衣。', duration: '6:00' },
+            // 輔具介紹影片
+            { id: 'v11', ytid: 'gnJr0EbsBz0', title: '輪椅/斜坡板操作', category: '輔具介紹', description: '如何正確操作輪椅上下斜坡板，確保行動安全。', duration: '6:45' },
+            { id: 'v12', ytid: '956E9fOO9W8', title: '助行器使用方法', category: '輔具介紹', description: '助行器高度調整與正確行走步態教學。', duration: '5:20' },
+            { id: 'v13', ytid: 'idW5-x02yDo', title: '單手拐杖使用', category: '輔具介紹', description: '中風復健偏癱者拐杖正確使用方法。', duration: '4:10' },
+            // 無障礙環境影片
+            { id: 'v14', ytid: 'vZzeNoen5D8', title: '安全扶手安裝', category: '無障礙環境', description: '浴室防滑與安全扶手安裝教學，預防跌倒。', duration: '7:30' },
+            { id: 'v15', ytid: 'gnJr0EbsBz0', title: '居家無障礙改造', category: '無障礙環境', description: '認識居家環境中的障礙物與斜坡板應用。', duration: '5:50' }, 
+             { id: 'v16', ytid: 'X3oE6onSFdg', title: '樓梯升降椅介紹', category: '無障礙環境', description: '解決長輩上下樓梯困難的輔具方案介紹。', duration: '4:45' },
         ];
 
         // 更新：新增分類標籤
